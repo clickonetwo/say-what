@@ -1,0 +1,28 @@
+{
+  "name": "say-what",
+  "version": "1.0.0",
+  "description": "Low-latency voice synthesis from ElevenLabs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier ./src --write",
+    "dev": "parcel src/public/index.html",
+    "build": "parcel build src/public/index.html"
+  },
+  "keywords": [],
+  "author": "Daniel Brotsky <dan@clickonetwo.io>",
+  "license": "GNU Affero Public License v3",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "npm": "^10.3.0",
+    "parcel": "^2.11.0",
+    "prettier": "^3.2.4",
+    "process": "^0.11.10",
+    "typescript": "^5.3.3"
+  }
+}
