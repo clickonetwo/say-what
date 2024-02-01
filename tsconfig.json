@@ -12,7 +12,7 @@
 
     /* Emit */
     "sourceMap": true,
-    "outDir": "./out",
+    "outDir": "./dist",
 
     /* Interop Constraints */
     "esModuleInterop": true,

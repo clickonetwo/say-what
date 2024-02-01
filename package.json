@@ -3,26 +3,42 @@
   "version": "1.0.0",
   "description": "Low-latency voice synthesis from ElevenLabs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node ./dist/tests.js",
     "format": "prettier ./src --write",
-    "dev": "parcel src/public/index.html",
+    "dev": "parcel serve src/public/index.html --no-cache",
     "build": "parcel build src/public/index.html"
   },
   "keywords": [],
   "author": "Daniel Brotsky <dan@clickonetwo.io>",
   "license": "GNU Affero Public License v3",
   "dependencies": {
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
+    "@fontsource/roboto": "^5.0.8",
+    "@mui/icons-material": "^5.15.6",
+    "@mui/material": "^5.15.6",
+    "@tanstack/react-query": "^5.17.19",
+    "js-cookie": "^3.0.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@tanstack/eslint-plugin-query": "^5.17.22",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.0",
+    "dotenv": "^16.4.0",
+    "events": "^3.3.0",
     "npm": "^10.3.0",
+    "os-browserify": "^0.3.0",
     "parcel": "^2.11.0",
+    "path-browserify": "^1.0.1",
     "prettier": "^3.2.4",
     "process": "^0.11.10",
+    "stream-browserify": "^3.0.0",
     "typescript": "^5.3.3"
   }
 }
