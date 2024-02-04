@@ -15,7 +15,6 @@ export function Generate(props: { settings: Settings }) {
         setState('Processing...')
         setUrl('')
         console.log(`Generating voice for: ${text}`)
-        const start = performance.now()
         generateSpeech(text)
             .then((gi) => {
                 setUrl(gi.blob_url)
@@ -42,12 +41,6 @@ export function Generate(props: { settings: Settings }) {
                     <Button variant="contained" onClick={generate} disabled={!text}>
                         {state}
                     </Button>
-                    {url.length > 0 && (
-                        <>
-                            <Typography>{`Generation took ${elapsed} milliseconds`}</Typography>
-                            <audio controls src={url} />
-                        </>
-                    )}
                 </>
             ) : (
                 <Typography>An API key is required for generation</Typography>

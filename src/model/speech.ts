@@ -104,9 +104,10 @@ export interface GenerationSettings {
 
 export interface GeneratedItem {
     history_item_id: string
+    text: string
     settings: GenerationSettings
     ms_time: number
-    blob_size: number
+    kb_blob_size: number
     blob_url: string
     favorite: boolean
 }
@@ -148,9 +149,10 @@ export async function generateSpeech(text: string) {
     const audio = URL.createObjectURL(blob)
     const item: GeneratedItem = {
         history_item_id: id || '',
+        text,
         settings: settings.generation_settings,
-        ms_time: elapsed,
-        blob_size: blob.size,
+        ms_time: Math.ceil(elapsed),
+        kb_blob_size: Math.ceil(blob.size / 1024),
         blob_url: audio,
         favorite: false,
     }

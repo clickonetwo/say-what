@@ -31,7 +31,7 @@ export class HistoryStore {
     }
     static loadHistory() {
         if (!isNode) {
-            const stored = localStorage.getItem('say_what_favorites')
+            const stored = localStorage.getItem('say_what_history')
             if (stored) {
                 HistoryStore.history = JSON.parse(stored)
                 HistoryStore.reloadMissingBlobs()

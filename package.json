@@ -7,7 +7,7 @@
     "format": "prettier ./src --write",
     "dev": "parcel serve src/public/index.html --no-cache",
     "debug": "parcel build src/public/index.html --no-cache --no-optimize",
-    "build": "parcel build src/public/index.html"
+    "build": "rm ./dist/*.* ./dist/*.*.* && parcel build src/public/index.html --no-cache --no-source-maps"
   },
   "keywords": [],
   "author": "Daniel Brotsky <dan@clickonetwo.io>",
