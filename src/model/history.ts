@@ -6,8 +6,10 @@ export class HistoryStore {
     static callbacks: (() => void)[] = []
     static subscribe(callback: () => void) {
         HistoryStore.callbacks = [...HistoryStore.callbacks, callback]
+        const unsub = SettingsStore.subscribeKeyChange(() => HistoryStore.reloadMissingBlobs())
         return () => {
-            HistoryStore.callbacks = HistoryStore.callbacks.filter((c) => c != callback)
+            HistoryStore.callbacks = HistoryStore.callbacks.filter((c) => c !== callback)
+            unsub()
         }
     }
     static notify() {
@@ -15,7 +17,11 @@ export class HistoryStore {
     }
     static getSnapshot() {
         if (HistoryStore.history.length == 0) {
-            HistoryStore.loadHistory()
+            const loaded = HistoryStore.loadHistory()
+            if (loaded.length > 0) {
+                HistoryStore.history = loaded
+                HistoryStore.reloadMissingBlobs()
+            }
         }
         return HistoryStore.history
     }
@@ -33,16 +39,12 @@ export class HistoryStore {
         if (!isNode) {
             const stored = localStorage.getItem('say_what_history')
             if (stored) {
-                HistoryStore.history = JSON.parse(stored)
-                HistoryStore.reloadMissingBlobs()
+                return JSON.parse(stored) as GeneratedItem[]
             }
         }
+        return [] as GeneratedItem[]
     }
     static async loadMissingBlobs() {
-        // can't load blobs if we can't access the API
-        if (SettingsStore.getSnapshot().api_key.length != 32) {
-            return false
-        }
         let missing = 0
         for (const item of HistoryStore.history) {
             if (item.blob_url) {
@@ -55,7 +57,15 @@ export class HistoryStore {
         return missing > 0
     }
     static reloadMissingBlobs() {
-        HistoryStore.loadMissingBlobs().then((ready) => ready && HistoryStore.notify())
+        // don't need a reload if none are missing
+        if (HistoryStore.history.filter((gi) => !gi.blob_url).length == 0) {
+            return
+        }
+        // can't load blobs if we can't access the API
+        if (SettingsStore.getSnapshot().api_key.length != 32) {
+            return
+        }
+        HistoryStore.loadMissingBlobs().then((ready) => ready && HistoryStore.updateAudio())
     }
     static addToHistory(gi: GeneratedItem) {
         HistoryStore.history = [gi, ...HistoryStore.history]
@@ -68,6 +78,12 @@ export class HistoryStore {
         HistoryStore.notify()
     }
     static updateFavorites() {
+        HistoryStore.history = [...HistoryStore.history]
+        HistoryStore.saveHistory()
+        HistoryStore.notify()
+    }
+    static updateAudio() {
+        HistoryStore.history = [...HistoryStore.history]
         HistoryStore.saveHistory()
         HistoryStore.notify()
     }

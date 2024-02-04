@@ -8,7 +8,7 @@ import '@fontsource/roboto/700.css'
 
 import { Creation } from './components/creation'
 import { SettingsStore } from './model/settings'
-import { Reuse } from './components/reuse'
+import { History } from './components/history'
 
 export function App() {
     const settings = useSyncExternalStore(SettingsStore.subscribe, SettingsStore.getSnapshot)
@@ -18,7 +18,7 @@ export function App() {
                 <Creation settings={settings} />
             </Grid>
             <Grid item xs={6}>
-                <Reuse settings={settings} />
+                <History />
             </Grid>
         </Grid>
     )
