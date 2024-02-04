@@ -39,6 +39,25 @@ export function History() {
 export function GeneratedSummary(props: { item: GeneratedItem }) {
     const [checked, setChecked] = useState(props.item.favorite)
     const [visible, setVisible] = useState(true)
+    const label = () => {
+        const gen_date = new Date(props.item.gen_date)
+        const midnight = new Date().setHours(0, 0, 0, 0)
+        const dayString = () => {
+            if (gen_date.valueOf() >= midnight) {
+                return 'Today'
+            } else if (gen_date.valueOf() >= midnight - 24 * 60 * 60 * 1000) {
+                return 'Yesterday'
+            } else {
+                const formatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' })
+                return formatter.format(gen_date)
+            }
+        }
+        const timeString = () => {
+            const formatter = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' })
+            return formatter.format(gen_date)
+        }
+        return `Item ${props.item.history_item_id} (${dayString()} ${timeString()})`
+    }
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         props.item.favorite = event.target.checked
         setChecked(event.target.checked)
@@ -60,13 +79,7 @@ export function GeneratedSummary(props: { item: GeneratedItem }) {
     if (visible) {
         return (
             <>
-                <TextField
-                    multiline
-                    fullWidth
-                    value={props.item.text}
-                    label={`History Id: ${props.item.history_item_id}`}
-                    disabled
-                />
+                <TextField multiline fullWidth value={props.item.text} label={label()} disabled />
                 <Typography style={{ paddingBottom: '10px' }}>
                     <Checkbox
                         checked={checked}
@@ -74,7 +87,7 @@ export function GeneratedSummary(props: { item: GeneratedItem }) {
                         icon={<RecentIcon />}
                         checkedIcon={<FavoriteIcon />}
                     />
-                    {`Generation of ${props.item.kb_blob_size} KB took ${props.item.ms_time} ms`}
+                    {`Generation of ${props.item.kb_blob_size} KB took ${props.item.gen_ms} ms`}
                     &nbsp;
                     {props.item.blob_url.length > 0 && player()}
                     <IconButton aria-label="delete" onClick={deleteItem}>

@@ -6,20 +6,15 @@ import Button from '@mui/material/Button'
 import { Settings } from '../model/settings'
 
 export function Generate(props: { settings: Settings }) {
-    const [url, setUrl] = useState('')
     const [text, setText] = useState('')
     const [state, setState] = useState('Please enter text')
-    const [elapsed, setElapsed] = useState(0)
 
     function generate() {
         setState('Processing...')
-        setUrl('')
         console.log(`Generating voice for: ${text}`)
         generateSpeech(text)
             .then((gi) => {
-                setUrl(gi.blob_url)
-                console.log(`Generation complete in ${gi.ms_time} milliseconds.`)
-                setElapsed(Math.ceil(gi.ms_time))
+                console.log(`Generation complete in ${gi.gen_ms} milliseconds.`)
                 setState('Ready to generate')
             })
             .catch((error) => {

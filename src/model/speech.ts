@@ -106,7 +106,8 @@ export interface GeneratedItem {
     history_item_id: string
     text: string
     settings: GenerationSettings
-    ms_time: number
+    gen_ms: number
+    gen_date: number
     kb_blob_size: number
     blob_url: string
     favorite: boolean
@@ -151,7 +152,8 @@ export async function generateSpeech(text: string) {
         history_item_id: id || '',
         text,
         settings: settings.generation_settings,
-        ms_time: Math.ceil(elapsed),
+        gen_ms: Math.ceil(elapsed),
+        gen_date: Date.now().valueOf(),
         kb_blob_size: Math.ceil(blob.size / 1024),
         blob_url: audio,
         favorite: false,

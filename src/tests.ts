@@ -42,7 +42,7 @@ async function testGeneration() {
         console.log(`Generating audio for: ${sentence}`)
         const item = await generateSpeech(sentence)
         assert(item.blob_url, `No audio returned from generated item`)
-        console.log(`Generation of ${item.kb_blob_size} bytes took ${item.ms_time} milliseconds`)
+        console.log(`Generation of ${item.kb_blob_size} bytes took ${item.gen_ms} milliseconds`)
     }
 }
 
