@@ -8,9 +8,11 @@ import { Settings } from '../model/settings'
 export function Generate(props: { settings: Settings }) {
     const [text, setText] = useState('')
     const [state, setState] = useState('Please enter text')
+    const [error, setError] = useState('')
 
     function generate() {
         setState('Processing...')
+        setError('')
         console.log(`Generating voice for: ${text}`)
         generateSpeech(text)
             .then((gi) => {
@@ -18,7 +20,8 @@ export function Generate(props: { settings: Settings }) {
                 setState('Ready to generate')
             })
             .catch((error) => {
-                setState(`Generation failed: ${JSON.stringify(error, null, 2)}`)
+                setError(error.toString())
+                setState(`Generation failure: Click to try again`)
             })
     }
 
@@ -26,6 +29,7 @@ export function Generate(props: { settings: Settings }) {
         let val = e.target.value
         setText(val)
         setState(val ? 'Ready to generate' : 'Enter text')
+        setError('')
     }
 
     return (
@@ -36,6 +40,7 @@ export function Generate(props: { settings: Settings }) {
                     <Button variant="contained" onClick={generate} disabled={!text}>
                         {state}
                     </Button>
+                    {error && <Typography>{error}</Typography>}
                 </>
             ) : (
                 <Typography>An API key is required for generation</Typography>
