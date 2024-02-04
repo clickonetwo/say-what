@@ -1,32 +1,75 @@
-import React, { useState, useSyncExternalStore } from 'react'
+import React, { useEffect, useState, useSyncExternalStore } from 'react'
 
-import Box from '@mui/material/Box'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
-import Stack from '@mui/material/Stack'
+import Grid from '@mui/material/Grid'
 
-import { saveSettings, Settings } from '../model/settings'
-import {
-    AutoCompleteOptions,
-    GenerationSettings,
-    ModelsStore,
-    VoicesStore,
-} from '../model/speech'
+import { Settings, SettingsStore } from '../model/settings'
+import { modelStore, voiceStore } from '../model/speech'
 
 import { ZeroToOneSlider } from './slider'
 import { ToggleSwitch } from './switch'
-import { IdPicker } from './IdPicker'
+import { Picker } from './picker'
 
 export function SettingsView(props: { settings: Settings }) {
     const [apiKey, setApiKey] = useState(props.settings.api_key)
-    if (apiKey) {
-        props.settings.api_key = apiKey
-        saveSettings()
-        return <GenerationSettings settings={props.settings.generation_settings} />
-    } else {
-        return <ApiKey apiKey={apiKey} setApiKey={setApiKey} />
-    }
+    const [format, setFormat] = useState(props.settings.generation_settings.output_format)
+    const [latency, setLatency] = useState(
+        props.settings.generation_settings.optimize_streaming_latency,
+    )
+    const [voiceId, setVoiceId] = useState(props.settings.generation_settings.voice_id)
+    const [modelId, setModelId] = useState(props.settings.generation_settings.model_id)
+    const [similarity, setSimilarity] = useState(
+        props.settings.generation_settings.voice_settings.similarity_boost,
+    )
+    const [stability, setStability] = useState(
+        props.settings.generation_settings.voice_settings.stability,
+    )
+    const [boost, setBoost] = useState(
+        props.settings.generation_settings.voice_settings.use_speaker_boost,
+    )
+    useEffect(() => {
+        SettingsStore.updateSettings(
+            apiKey,
+            format,
+            latency,
+            voiceId,
+            modelId,
+            similarity,
+            stability,
+            boost,
+        )
+    }, [apiKey, format, latency, voiceId, modelId, similarity, stability, boost])
+    return (
+        <>
+            {apiKey && (
+                <>
+                    <VoiceModelSettings
+                        voiceId={voiceId}
+                        setVoiceId={setVoiceId}
+                        modelId={modelId}
+                        setModelId={setModelId}
+                    />
+                    <FormatLatencySettings
+                        format={format}
+                        setFormat={setFormat}
+                        latency={latency}
+                        setLatency={setLatency}
+                    />
+                    <VoiceSettings
+                        stability={stability}
+                        setStability={setStability}
+                        similarity={similarity}
+                        setSimilarity={setSimilarity}
+                        boost={boost}
+                        setBoost={setBoost}
+                    />
+                </>
+            )}
+            <ApiKey apiKey={apiKey} setApiKey={setApiKey} />
+        </>
+    )
 }
 
 function ApiKey(props: {
@@ -37,97 +80,135 @@ function ApiKey(props: {
     const onSubmit = () => props.setApiKey(input)
     const onChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)
     return (
-        <Box
-            component="form"
-            sx={{
-                '& > :not(style)': { m: 1, width: '32ch' },
-            }}
-            noValidate
-            autoComplete="off"
-        >
-            <TextField
-                id="outlined-basic"
-                label="ElevenLabs API Key"
-                variant="outlined"
-                onChange={onChange}
-            />
-            <Button variant="contained" onClick={onSubmit}>
-                Set API Key
-            </Button>
-        </Box>
+        <Grid container component="form" noValidate autoComplete="off">
+            <Grid item>
+                <TextField
+                    id="outlined-basic"
+                    label="ElevenLabs API Key"
+                    variant="outlined"
+                    style={{ width: '40ch' }}
+                    value={input}
+                    onChange={onChange}
+                />
+            </Grid>
+            <Grid item alignItems="stretch" style={{ display: 'flex' }}>
+                <Button variant="contained" onClick={onSubmit}>
+                    Set API Key
+                </Button>
+            </Grid>
+        </Grid>
     )
 }
 
-function GenerationSettings(props: { settings: GenerationSettings }) {
-    const voices = useSyncExternalStore(VoicesStore.subscribe, VoicesStore.getSnapshot)
-    const voiceId = props.settings.voice_id
-    const setVoiceId = (val: string) => {
-        props.settings.voice_id = val
-        saveSettings()
-    }
-    const models = useSyncExternalStore(ModelsStore.subscribe, ModelsStore.getSnapshot)
-    const modelId = props.settings.model_id
-    const setModelId = (val: string) => {
-        props.settings.model_id = val
-        saveSettings()
-    }
-    const stability = props.settings.voice_settings.stability
-    const setStability = (val: number) => {
-        props.settings.voice_settings.stability = val
-        saveSettings()
-    }
-    const similarityBoost = props.settings.voice_settings.similarity_boost
-    const setSimilarityBoost = (val: number) => {
-        props.settings.voice_settings.similarity_boost = val
-        saveSettings()
-    }
-    const speakerBoost = props.settings.voice_settings.use_speaker_boost
-    const setSpeakerBoost = (val: boolean) => {
-        props.settings.voice_settings.use_speaker_boost = val
-        saveSettings()
-    }
+function VoiceModelSettings(props: {
+    voiceId: string
+    setVoiceId: React.Dispatch<React.SetStateAction<string>>
+    modelId: string
+    setModelId: React.Dispatch<React.SetStateAction<string>>
+}) {
+    const voices = useSyncExternalStore(
+        (c) => voiceStore.subscribe(c),
+        () => voiceStore.getSnapshot(),
+    )
+    const models = useSyncExternalStore(
+        (c) => modelStore.subscribe(c),
+        () => modelStore.getSnapshot(),
+    )
     return (
-        <Stack spacing={2}>
+        <>
             {voices.length ? (
-                <IdPicker
+                <Picker
                     name="VoiceId"
                     options={voices}
-                    initial={voiceId}
+                    initial={props.voiceId}
                     label={'Voice'}
-                    updater={setVoiceId}
+                    updater={props.setVoiceId}
                 />
             ) : (
                 <Typography>Retrieving voices...</Typography>
             )}
             {models.length ? (
-                <IdPicker
+                <Picker
                     name="ModelId"
                     options={models}
-                    initial={modelId}
+                    initial={props.modelId}
                     label={'Model'}
-                    updater={setModelId}
+                    updater={props.setModelId}
                 />
             ) : (
                 <Typography>Retrieving models...</Typography>
             )}
+        </>
+    )
+}
+
+function FormatLatencySettings(props: {
+    format: string
+    setFormat: React.Dispatch<React.SetStateAction<string>>
+    latency: string
+    setLatency: React.Dispatch<React.SetStateAction<string>>
+}) {
+    const formatOptions = [
+        { label: '22.05kHz sample rate at 32kbps', id: 'mp3_22050_32' },
+        { label: '44.1kHz sample rate at 32kbps', id: 'mp3_44100_32' },
+        { label: '44.1kHz sample rate at 64kbps', id: 'mp3_44100_64' },
+        { label: '44.1kHz sample rate at 96kbps', id: 'mp3_44100_96' },
+        { label: '44.1kHz sample rate at 128kbps', id: 'mp3_44100_128' },
+    ]
+    const latencyOptions = [
+        { label: 'No latency optimization', id: '0' },
+        { label: 'Normal (50% of max) latency optimization', id: '1' },
+        { label: 'Strong (75% of max) latency optimization', id: '2' },
+        { label: 'Max latency optimization', id: '3' },
+    ]
+    return (
+        <>
+            <Picker
+                name="OutputFormat"
+                options={formatOptions}
+                initial={props.format}
+                label={'Output Format'}
+                updater={props.setFormat}
+            />
+            <Picker
+                name="Latency"
+                options={latencyOptions}
+                initial={props.latency}
+                label={'Output Format'}
+                updater={props.setLatency}
+            />
+        </>
+    )
+}
+
+function VoiceSettings(props: {
+    stability: number
+    setStability: React.Dispatch<React.SetStateAction<number>>
+    similarity: number
+    setSimilarity: React.Dispatch<React.SetStateAction<number>>
+    boost: boolean
+    setBoost: React.Dispatch<React.SetStateAction<boolean>>
+}) {
+    return (
+        <>
             <ZeroToOneSlider
                 name="Stability"
-                initial={stability}
+                initial={props.stability}
                 label={'Stability'}
-                updater={setStability}
+                updater={props.setStability}
             />
             <ZeroToOneSlider
                 name="SimilarityBoost"
-                initial={similarityBoost}
+                initial={props.similarity}
                 label={'Similarity Boost'}
-                updater={setSimilarityBoost}
+                updater={props.setSimilarity}
             />
             <ToggleSwitch
                 name={'speakerBoost'}
-                initial={speakerBoost}
+                initial={props.boost}
                 label={'Speaker Boost'}
-                updater={setSpeakerBoost}
+                updater={props.setBoost}
             />
-        </Stack>
+        </>
     )
 }

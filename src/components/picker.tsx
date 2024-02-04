@@ -8,21 +8,22 @@ interface Option {
     id: string
 }
 
-export function IdPicker(props: {
+export function Picker(props: {
     name: string
     options: Option[]
     initial: string
     label: string
     updater: (val: string) => void
 }) {
-    const onChange = (e: React.SyntheticEvent, v: string) => {
-        props.updater(v)
+    const onChange = (e: React.SyntheticEvent, v: Option) => {
+        props.updater(v.id)
     }
     return (
         <Autocomplete
             id={props.name}
             options={props.options}
-            value={props.options.find((o) => o.id == props.initial)}
+            value={props.options.find((o) => o.id == props.initial) || props.options[0]}
+            onChange={onChange}
             disableClearable={true}
             sx={{ width: 300 }}
             renderInput={(params) => <TextField {...params} label={props.label} />}

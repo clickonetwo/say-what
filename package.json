@@ -6,6 +6,7 @@
     "test": "node ./dist/tests.js",
     "format": "prettier ./src --write",
     "dev": "parcel serve src/public/index.html --no-cache",
+    "debug": "parcel build src/public/index.html --no-cache --no-optimize",
     "build": "parcel build src/public/index.html"
   },
   "keywords": [],
@@ -23,7 +24,6 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@tanstack/eslint-plugin-query": "^5.17.22",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",

@@ -1,4 +1,6 @@
-import { getSettings } from './settings'
+import { HistoryStore } from './history'
+import { ApiExternalStore } from './externalStore'
+import { SettingsStore } from './settings'
 
 export interface Voice {
     voice_id: string
@@ -10,7 +12,7 @@ interface VoicePage {
 }
 
 export async function getVoices() {
-    const settings = getSettings()
+    const settings = SettingsStore.getSnapshot()
     const url = `${settings.api_root}/voices`
     const method = 'GET'
     const headers = { 'xi-api-key': settings.api_key }
@@ -19,46 +21,25 @@ export async function getVoices() {
         let detail = JSON.stringify(await response.json())
         let message = `${url} got ${response.status}: ${detail}`
         console.error(message)
-        throw Error(message)
+        return []
     }
     const page: VoicePage = await response.json()
     return page.voices
 }
 
-export interface AutoCompleteOptions {
+export interface AutoCompleteOption {
     label: string
     id: string
 }
 
-export class VoicesStore {
-    static callbacks: (() => void)[] = []
-    static voicesData: Voice[] = []
-    static optionCache: AutoCompleteOptions[] = []
-    static subscribe(callback: () => void) {
-        console.log('Subscribed to voices')
-        VoicesStore.callbacks = [...VoicesStore.callbacks, callback]
-        if (VoicesStore.optionCache.length > 0) {
-            VoicesStore.callbacks.map((c) => c())
-        } else if (!getSettings().api_key) {
-            console.warn("Can't fetch voices without api key")
-        } else {
-            console.log('Fetching voices...')
-            getVoices().then((voices) => {
-                VoicesStore.optionCache = voices.map((voice) => {
-                    return { label: voice.name, id: voice.voice_id }
-                })
-                console.log('Fetched voices')
-                VoicesStore.callbacks.map((c) => c())
-            })
-        }
-        return () => {
-            VoicesStore.callbacks = VoicesStore.callbacks.filter((c) => c !== callback)
-        }
-    }
-    static getSnapshot() {
-        return VoicesStore.optionCache
-    }
-}
+export const voiceStore = new ApiExternalStore<AutoCompleteOption>(async () => {
+    let voices = await getVoices()
+    let options = voices.map(
+        (voice) => ({ label: voice.name, id: voice.voice_id }) as AutoCompleteOption,
+    )
+    options.sort((a, b) => (a.label < b.label ? -1 : b.label < a.label ? 1 : 0))
+    return options
+})
 
 export interface Language {
     language_id: string
@@ -83,7 +64,7 @@ export interface Model {
 }
 
 export async function getModels() {
-    const settings = getSettings()
+    const settings = SettingsStore.getSnapshot()
     const url = `${settings.api_root}/models`
     const method = 'GET'
     const headers = { 'xi-api-key': settings.api_key }
@@ -92,41 +73,20 @@ export async function getModels() {
         let detail = JSON.stringify(await response.json())
         let message = `${url} got ${response.status}: ${detail}`
         console.error(message)
-        throw Error(message)
+        return []
     }
     const models: Model[] = await response.json()
     return models
 }
 
-export class ModelsStore {
-    static callbacks: (() => void)[] = []
-    static modelsData: Model[] = []
-    static optionCache: AutoCompleteOptions[] = []
-    static subscribe(callback: () => void) {
-        console.log('Subscribed to models')
-        ModelsStore.callbacks = [...ModelsStore.callbacks, callback]
-        if (ModelsStore.optionCache.length > 0) {
-            ModelsStore.callbacks.map((c) => c())
-        } else if (!getSettings().api_key) {
-            console.warn("Can't fetch models without api key")
-        } else {
-            console.log('Fetching models...')
-            getModels().then((models) => {
-                ModelsStore.optionCache = models.map((model) => {
-                    return { label: model.name, id: model.model_id }
-                })
-                console.log('Fetched models')
-                ModelsStore.callbacks.map((c) => c())
-            })
-        }
-        return () => {
-            ModelsStore.callbacks = ModelsStore.callbacks.filter((c) => c !== callback)
-        }
-    }
-    static getSnapshot() {
-        return ModelsStore.optionCache
-    }
-}
+export const modelStore = new ApiExternalStore<AutoCompleteOption>(async () => {
+    let models = await getModels()
+    let options = models.map(
+        (model) => ({ label: model.name, id: model.model_id }) as AutoCompleteOption,
+    )
+    options.sort((a, b) => (a.label < b.label ? -1 : b.label < a.label ? 1 : 0))
+    return options
+})
 
 export interface SpeechSettings {
     similarity_boost: number
@@ -134,99 +94,35 @@ export interface SpeechSettings {
     use_speaker_boost: boolean
 }
 
-export interface HistoryItem {
-    history_item_id: string
-    request_id: string
-    voice_id: string
-    model_id: string
-    voice_name: string
-    voice_category: string
-    text: string
-    date_unix: number
-    content_type: string
-    state: string
-    settings: SpeechSettings
-}
-
-interface HistoryPage {
-    history: HistoryItem[]
-    last_history_item_id: string
-    has_more: boolean
-}
-
-export async function getHistory(limit: number = 100) {
-    const settings = getSettings()
-    const items: HistoryItem[] = []
-    const endpoint = `${settings.api_root}/history`
-    const method = 'GET'
-    const headers = { 'xi-api-key': settings.api_key }
-    let start_after_history_item_id: string = ''
-    for (let needed = limit; needed > 0; ) {
-        const page_size = (needed < 100 ? needed : 100).toString()
-        const query: { [p: string]: string } = start_after_history_item_id
-            ? { page_size, start_after_history_item_id }
-            : { page_size }
-        const url = endpoint + '?' + new URLSearchParams(query).toString()
-        const response = await fetch(url, { method, headers })
-        if (!response.ok) {
-            const err = JSON.stringify(await response.json())
-            let message = `${url} got (${response.status}): ${err}`
-            console.error(message)
-            throw Error(message)
-        }
-        const body: HistoryPage = await response.json()
-        if (!body.has_more) {
-            break
-        }
-        start_after_history_item_id = body.last_history_item_id
-        const newItems = body.history
-        items.push(...newItems)
-        needed -= newItems.length
-    }
-    return items
-}
-
-export async function getHistoryItemAudio(id: string) {
-    const settings = getSettings()
-    const url = `${settings.api_root}/history/${id}/audio`
-    const method = 'GET'
-    const headers = { 'xi-api-key': settings.api_key }
-    const response = await fetch(url, { method, headers })
-    if (!response.ok) {
-        const err = JSON.stringify(await response.json())
-        let message = `${url} got (${response.status}): ${err}`
-        console.error(message)
-        throw Error(message)
-    }
-    const mimeType = response.headers.get('Content-Type')
-    if (!mimeType) {
-        throw Error(`Audio mime type is: ${mimeType}`)
-    }
-    const blob = await response.blob()
-    if (blob.type != mimeType) {
-        console.warn(`Blob type (${blob.type}) isn't ${mimeType}`)
-    }
-    return blob
-}
-
 export interface GenerationSettings {
     output_format: string
-    optimize_streaming_latency: number
+    optimize_streaming_latency: string
     voice_id: string
     model_id: string
     voice_settings: SpeechSettings
 }
 
+export interface GeneratedItem {
+    history_item_id: string
+    settings: GenerationSettings
+    ms_time: number
+    blob_size: number
+    blob_url: string
+    favorite: boolean
+}
+
 export async function generateSpeech(text: string) {
-    const settings = getSettings()
-    const voiceId = 'rSBHNPN4dSn9C1StzJ58'
+    const settings = SettingsStore.getSnapshot()
+    const voiceId = settings.generation_settings.voice_id
     const endpoint = `${settings.api_root}/text-to-speech/${voiceId}`
     const method = 'POST'
-    const headers = { 'xi-api-key': settings.api_key, 'Content-Type': 'application/json' }
+    const headers = {
+        'xi-api-key': settings.api_key,
+        'Content-Type': 'application/json',
+    }
     const query: { [p: string]: string } = {
         output_format: settings.generation_settings.output_format,
-        optimize_streaming_latency:
-            settings.generation_settings.optimize_streaming_latency.toString(),
+        optimize_streaming_latency: settings.generation_settings.optimize_streaming_latency,
     }
     const url = endpoint + '?' + new URLSearchParams(query).toString()
     const body = JSON.stringify({
@@ -238,6 +134,7 @@ export async function generateSpeech(text: string) {
             use_speaker_boost: settings.generation_settings.voice_settings.use_speaker_boost,
         },
     })
+    const start = performance.now()
     const response = await fetch(url, { method, headers, body })
     if (!response.ok) {
         const err = JSON.stringify(await response.json())
@@ -245,5 +142,18 @@ export async function generateSpeech(text: string) {
         console.error(message)
         throw Error(message)
     }
-    return await response.blob()
+    const id = response.headers.get('history-item-id')
+    const blob = await response.blob()
+    const elapsed = performance.now() - start
+    const audio = URL.createObjectURL(blob)
+    const item: GeneratedItem = {
+        history_item_id: id || '',
+        settings: settings.generation_settings,
+        ms_time: elapsed,
+        blob_size: blob.size,
+        blob_url: audio,
+        favorite: false,
+    }
+    HistoryStore.addToHistory(item)
+    return item
 }

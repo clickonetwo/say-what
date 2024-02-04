@@ -1,12 +1,7 @@
-import {
-    generateSpeech,
-    getHistory,
-    getHistoryItemAudio,
-    getModels,
-    getVoices,
-} from './model/speech'
+import { generateSpeech, getModels, getVoices } from './model/speech'
 import assert from 'node:assert'
 import { writeFileSync } from 'node:fs'
+import { getHistoryItemAudio, getHistoryItems } from './model/history'
 
 async function testVoices() {
     const voices = await getVoices()
@@ -19,8 +14,8 @@ async function testModels() {
 }
 
 async function testHistory() {
-    const items = await getHistory(20)
-    assert(items.length > 0, 'No History items?')
+    const items = await getHistoryItems(20)
+    assert(items.length > 0, 'No Archive items?')
     const id = items[0].history_item_id
     const blob = await getHistoryItemAudio(id)
     assert(blob.type == 'audio/mpeg', `Unexpected audio type: ${blob.type}`)
@@ -45,17 +40,9 @@ async function testGeneration() {
     for (let i = 0; i < sentences.length; i++) {
         const sentence = sentences[i]
         console.log(`Generating audio for: ${sentence}`)
-        const startTime = performance.now()
-        const blob = await generateSpeech(sentence)
-        const endTime = performance.now()
-        assert(blob.type == 'audio/mpeg', `Unexpected audio type: ${blob.type}`)
-        console.log(
-            `Generation of ${blob.size} bytes took ${endTime - startTime} milliseconds`,
-        )
-        const path = `local/test-sentence-${i}.mpeg`
-        const buffer = new DataView(await blob.arrayBuffer())
-        writeFileSync(path, buffer)
-        console.log(`Wrote generated audio to ${path}`)
+        const item = await generateSpeech(sentence)
+        assert(item.blob_url, `No audio returned from generated item`)
+        console.log(`Generation of ${item.blob_size} bytes took ${item.ms_time} milliseconds`)
     }
 }
 

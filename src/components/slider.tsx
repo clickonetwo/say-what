@@ -21,10 +21,13 @@ export function ZeroToOneSlider(props: {
 
     const handleSliderChange = (event: Event, newValue: number | number[]) => {
         setValue(newValue as number)
+        props.updater(newValue as number)
     }
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setValue(event.target.value === '' ? 0 : Number(event.target.value))
+        let value = event.target.value === '' ? 0 : Number(event.target.value)
+        setValue(value)
+        props.updater(value)
     }
 
     const handleBlur = () => {
@@ -44,7 +47,6 @@ export function ZeroToOneSlider(props: {
                 <Grid item xs>
                     <Slider
                         value={typeof value === 'number' ? value : props.initial}
-                        //scale={scale}
                         step={0.01}
                         min={0}
                         max={1}
