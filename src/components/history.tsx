@@ -6,19 +6,26 @@ import IconButton from '@mui/material/IconButton'
 import RecentIcon from '@mui/icons-material/FavoriteBorder'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import DeleteIcon from '@mui/icons-material/Delete'
+import FactCheckIcon from '@mui/icons-material/FactCheck'
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 
 import { HistoryStore } from '../model/history'
-import { GeneratedItem } from '../model/speech'
+import { GeneratedItem, generationSettingsEqual } from '../model/speech'
 import Checkbox from '@mui/material/Checkbox'
+import { Settings, SettingsStore } from '../model/settings'
 
-export function History() {
+export function History(props: { settings: Settings }) {
     const history = useSyncExternalStore(HistoryStore.subscribe, HistoryStore.getSnapshot)
     const [favorites, recents] = history.reduce(
         (acc, gi) => (gi.favorite ? (acc[0].push(gi), acc) : (acc[1].push(gi), acc)),
         [[] as GeneratedItem[], [] as GeneratedItem[]],
     )
-    const topItems = favorites.map((gi) => <GeneratedSummary key={gi.history_item_id} item={gi} />)
-    const bottomItems = recents.map((gi) => <GeneratedSummary key={gi.history_item_id} item={gi} />)
+    const topItems = favorites.map((gi) => (
+        <GeneratedSummary settings={props.settings} key={gi.history_item_id} item={gi} />
+    ))
+    const bottomItems = recents.map((gi) => (
+        <GeneratedSummary settings={props.settings} key={gi.history_item_id} item={gi} />
+    ))
     const message = (text: string) => (
         <Typography style={{ paddingBottom: '1em' }}>{text}</Typography>
     )
@@ -36,9 +43,12 @@ export function History() {
     )
 }
 
-export function GeneratedSummary(props: { item: GeneratedItem }) {
+export function GeneratedSummary(props: { settings: Settings; item: GeneratedItem }) {
     const [checked, setChecked] = useState(props.item.favorite)
     const [visible, setVisible] = useState(true)
+    const [details] = useState(
+        generationSettingsEqual(props.settings.generation_settings, props.item.settings),
+    )
     const label = () => {
         const gen_date = new Date(props.item.gen_date)
         const midnight = new Date().setHours(0, 0, 0, 0)
@@ -76,11 +86,21 @@ export function GeneratedSummary(props: { item: GeneratedItem }) {
         setVisible(false)
         HistoryStore.removeFromHistory(props.item)
     }
+    const setItemSettings = () => {
+        if (details) return
+        SettingsStore.setGenerationSnapshot(props.item.settings)
+    }
     if (visible) {
         return (
             <>
                 <TextField multiline fullWidth value={props.item.text} label={label()} disabled />
                 <Typography style={{ paddingBottom: '10px' }}>
+                    <Checkbox
+                        checked={details}
+                        onChange={setItemSettings}
+                        icon={<CheckBoxOutlineBlankIcon />}
+                        checkedIcon={<FactCheckIcon />}
+                    />
                     <Checkbox
                         checked={checked}
                         onChange={handleChange}

@@ -15,10 +15,10 @@ export function App() {
     return (
         <Grid container spacing={4}>
             <Grid item xs={6}>
-                <Creation settings={settings} />
+                <Creation key={settings.timestamp} settings={settings} />
             </Grid>
             <Grid item xs={6}>
-                <History />
+                <History key={settings.timestamp} settings={settings} />
             </Grid>
         </Grid>
     )

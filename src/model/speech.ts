@@ -102,6 +102,19 @@ export interface GenerationSettings {
     voice_settings: SpeechSettings
 }
 
+export function generationSettingsEqual(s1: GenerationSettings, s2: GenerationSettings) {
+    if (s1 === s2) return true
+    if (s1.output_format != s2.output_format) return false
+    if (s1.optimize_streaming_latency != s2.optimize_streaming_latency) return false
+    if (s1.voice_id != s2.voice_id) return false
+    if (s1.model_id != s2.model_id) return false
+    if (s1.voice_settings === s2.voice_settings) return true
+    if (s1.voice_settings.stability != s2.voice_settings.stability) return false
+    if (s1.voice_settings.similarity_boost != s2.voice_settings.similarity_boost) return false
+    if (s1.voice_settings.use_speaker_boost != s2.voice_settings.use_speaker_boost) return false
+    return true
+}
+
 export interface GeneratedItem {
     history_item_id: string
     text: string

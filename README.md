@@ -1,2 +1,3 @@
 # say-what
-A web app for experimenting with and reusing snippets of generated speech
+
+A webapp for generation and management of text-to-speech snippets.

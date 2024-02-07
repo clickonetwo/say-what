@@ -1,18 +1,20 @@
 import Cookies from 'js-cookie'
 
-import { GenerationSettings } from './speech'
+import { GenerationSettings, generationSettingsEqual } from './speech'
 import { ApiExternalStore } from './externalStore'
 
 export const isNode =
     typeof process !== 'undefined' && typeof process?.versions?.node !== 'undefined'
 
 export interface Settings {
+    timestamp: number
     api_key: string
     api_root: string
     generation_settings: GenerationSettings
 }
 
 const defaultSettings: Settings = {
+    timestamp: 0,
     api_key: '',
     api_root: 'https://api.elevenlabs.io/v1',
     generation_settings: {
@@ -68,26 +70,46 @@ export class SettingsStore {
         useSpeakerBoost: boolean,
     ) {
         const notifyApiKeyChange = apiKey != SettingsStore.settings.api_key
-        SettingsStore.settings = {
-            api_key: apiKey,
-            api_root: SettingsStore.settings.api_root,
-            generation_settings: {
-                output_format: outputFormat,
-                optimize_streaming_latency: optimizeStreamingLatency,
-                voice_id: voiceId,
-                model_id: modelId,
-                voice_settings: {
-                    similarity_boost: similarityBoost,
-                    stability: stability,
-                    use_speaker_boost: useSpeakerBoost,
-                },
+        const generationSettings = {
+            output_format: outputFormat,
+            optimize_streaming_latency: optimizeStreamingLatency,
+            voice_id: voiceId,
+            model_id: modelId,
+            voice_settings: {
+                similarity_boost: similarityBoost,
+                stability: stability,
+                use_speaker_boost: useSpeakerBoost,
             },
         }
-        SettingsStore.saveSettings()
-        if (notifyApiKeyChange) {
-            SettingsStore.notifyKeyChange()
+        const notifyGenerationChange = !generationSettingsEqual(
+            SettingsStore.settings.generation_settings,
+            generationSettings,
+        )
+        if (notifyApiKeyChange || notifyGenerationChange) {
+            SettingsStore.settings = {
+                timestamp: Date.now().valueOf(),
+                api_key: apiKey,
+                api_root: SettingsStore.settings.api_root,
+                generation_settings: generationSettings,
+            }
+            SettingsStore.saveSettings()
+            if (notifyApiKeyChange) {
+                SettingsStore.notifyKeyChange()
+            }
+            SettingsStore.notifyAnyChange()
         }
-        SettingsStore.notifyAnyChange()
+    }
+
+    static setGenerationSnapshot(settings: GenerationSettings) {
+        if (!generationSettingsEqual(SettingsStore.settings.generation_settings, settings)) {
+            SettingsStore.settings = {
+                timestamp: Date.now().valueOf(),
+                api_key: SettingsStore.settings.api_key,
+                api_root: SettingsStore.settings.api_root,
+                generation_settings: settings,
+            }
+            SettingsStore.notifyAnyChange()
+        }
     }
 
     static getSnapshot() {
@@ -101,7 +123,11 @@ export class SettingsStore {
         if (!isNode) {
             const stored = localStorage.getItem('say_what_settings')
             if (stored) {
-                SettingsStore.settings = JSON.parse(stored)
+                const restored: Settings = JSON.parse(stored)
+                if (!restored?.timestamp) {
+                    restored.timestamp = 0
+                }
+                SettingsStore.settings = restored
                 return
             }
         }
