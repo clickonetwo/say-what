@@ -6,6 +6,7 @@ import IconButton from '@mui/material/IconButton'
 import RecentIcon from '@mui/icons-material/FavoriteBorder'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import DeleteIcon from '@mui/icons-material/Delete'
+import DownloadIcon from '@mui/icons-material/Download'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 
@@ -86,9 +87,15 @@ export function GeneratedSummary(props: { settings: Settings; item: GeneratedIte
         setVisible(false)
         HistoryStore.removeFromHistory(props.item)
     }
+    const downloadItem = () => {
+        const link = document.createElement('a')
+        link.download = `generated-voice.mp3`
+        link.href = props.item.blob_url
+        link.click()
+    }
     const setItemSettings = () => {
         if (details) return
-        SettingsStore.setGenerationSnapshot(props.item.settings)
+        SettingsStore.updateLocalGenerationSettings(props.item.settings)
     }
     if (visible) {
         return (
@@ -110,6 +117,9 @@ export function GeneratedSummary(props: { settings: Settings; item: GeneratedIte
                     {`Generation of ${props.item.kb_blob_size} KB took ${props.item.gen_ms} ms`}
                     &nbsp;
                     {props.item.blob_url.length > 0 && player()}
+                    <IconButton aria-label="download" onClick={downloadItem}>
+                        <DownloadIcon />
+                    </IconButton>
                     <IconButton aria-label="delete" onClick={deleteItem}>
                         <DeleteIcon />
                     </IconButton>

@@ -6,10 +6,9 @@ import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Grid'
 
 import { Settings, SettingsStore } from '../model/settings'
-import { modelStore, voiceStore } from '../model/speech'
+import { modelStore, pdictStore, voiceStore } from '../model/speech'
 
 import { ZeroToOneSlider } from './slider'
-import { ToggleSwitch } from './switch'
 import { Picker } from './picker'
 
 export function SettingsView(props: { settings: Settings }) {
@@ -29,8 +28,11 @@ export function SettingsView(props: { settings: Settings }) {
     const [boost, setBoost] = useState(
         props.settings.generation_settings.voice_settings.use_speaker_boost,
     )
+    const [pdictId, setPdictId] = useState(
+        props.settings.generation_settings.pronunciation_dictionary,
+    )
     useEffect(() => {
-        SettingsStore.updateSettings(
+        SettingsStore.updateLocalSettings(
             apiKey,
             format,
             latency,
@@ -39,8 +41,9 @@ export function SettingsView(props: { settings: Settings }) {
             similarity,
             stability,
             boost,
+            pdictId,
         )
-    }, [apiKey, format, latency, voiceId, modelId, similarity, stability, boost])
+    }, [apiKey, format, latency, voiceId, modelId, similarity, stability, boost, pdictId])
     return (
         <>
             {apiKey && (
@@ -65,6 +68,7 @@ export function SettingsView(props: { settings: Settings }) {
                         boost={boost}
                         setBoost={setBoost}
                     />
+                    <PronunciationSettings pdictId={pdictId} setPdictId={setPdictId} />
                 </>
             )}
             <ApiKey apiKey={apiKey} setApiKey={setApiKey} />
@@ -86,7 +90,7 @@ function ApiKey(props: {
                     id="outlined-basic"
                     label="ElevenLabs API Key"
                     variant="outlined"
-                    style={{ width: '40ch' }}
+                    style={{ width: '54ch' }}
                     value={input}
                     onChange={onChange}
                 />
@@ -148,13 +152,13 @@ function FormatLatencySettings(props: {
     latency: string
     setLatency: React.Dispatch<React.SetStateAction<string>>
 }) {
-    const formatOptions = [
-        { label: '22.05kHz sample rate at 32kbps', id: 'mp3_22050_32' },
-        { label: '44.1kHz sample rate at 32kbps', id: 'mp3_44100_32' },
-        { label: '44.1kHz sample rate at 64kbps', id: 'mp3_44100_64' },
-        { label: '44.1kHz sample rate at 96kbps', id: 'mp3_44100_96' },
-        { label: '44.1kHz sample rate at 128kbps', id: 'mp3_44100_128' },
-    ]
+    // const formatOptions = [
+    //     { label: '22.05kHz sample rate at 32kbps', id: 'mp3_22050_32' },
+    //     { label: '44.1kHz sample rate at 32kbps', id: 'mp3_44100_32' },
+    //     { label: '44.1kHz sample rate at 64kbps', id: 'mp3_44100_64' },
+    //     { label: '44.1kHz sample rate at 96kbps', id: 'mp3_44100_96' },
+    //     { label: '44.1kHz sample rate at 128kbps', id: 'mp3_44100_128' },
+    // ]
     const latencyOptions = [
         { label: 'No latency optimization', id: '0' },
         { label: 'Normal (50% of max) latency optimization', id: '1' },
@@ -163,18 +167,18 @@ function FormatLatencySettings(props: {
     ]
     return (
         <>
-            <Picker
-                name="OutputFormat"
-                options={formatOptions}
-                initial={props.format}
-                label={'Output Format'}
-                updater={props.setFormat}
-            />
+            {/*<Picker*/}
+            {/*    name="OutputFormat"*/}
+            {/*    options={formatOptions}*/}
+            {/*    initial={props.format}*/}
+            {/*    label={'Output Format'}*/}
+            {/*    updater={props.setFormat}*/}
+            {/*/>*/}
             <Picker
                 name="Latency"
                 options={latencyOptions}
                 initial={props.latency}
-                label={'Output Format'}
+                label={'Latency'}
                 updater={props.setLatency}
             />
         </>
@@ -191,24 +195,57 @@ function VoiceSettings(props: {
 }) {
     return (
         <>
-            <ZeroToOneSlider
-                name="Stability"
-                initial={props.stability}
-                label={'Stability'}
-                updater={props.setStability}
-            />
-            <ZeroToOneSlider
-                name="SimilarityBoost"
-                initial={props.similarity}
-                label={'Similarity Boost'}
-                updater={props.setSimilarity}
-            />
-            <ToggleSwitch
-                name={'speakerBoost'}
-                initial={props.boost}
-                label={'Speaker Boost'}
-                updater={props.setBoost}
-            />
+            <Grid container spacing={1} alignItems="left">
+                <Grid item xs={6}>
+                    <ZeroToOneSlider
+                        name="Stability"
+                        initial={props.stability}
+                        label={'Stability'}
+                        updater={props.setStability}
+                    />
+                </Grid>
+                <Grid item xs={6}>
+                    <ZeroToOneSlider
+                        name="SimilarityBoost"
+                        initial={props.similarity}
+                        label={'Similarity Boost'}
+                        updater={props.setSimilarity}
+                    />
+                </Grid>
+                {/*<Grid item>*/}
+                {/*    <ToggleSwitch*/}
+                {/*        name={'speakerBoost'}*/}
+                {/*        initial={props.boost}*/}
+                {/*        label={'Speaker Boost'}*/}
+                {/*        updater={props.setBoost}*/}
+                {/*    />*/}
+                {/*</Grid>*/}
+            </Grid>
+        </>
+    )
+}
+
+function PronunciationSettings(props: {
+    pdictId: string
+    setPdictId: React.Dispatch<React.SetStateAction<string>>
+}) {
+    const dicts = useSyncExternalStore(
+        (c) => pdictStore.subscribe(c),
+        () => pdictStore.getSnapshot(),
+    )
+    return (
+        <>
+            {dicts.length ? (
+                <Picker
+                    name="DictionaryId"
+                    options={dicts}
+                    initial={props.pdictId}
+                    label={'Pronunciation Dictionary'}
+                    updater={props.setPdictId}
+                />
+            ) : (
+                <Typography>Retrieving pronunciation dictionaries...</Typography>
+            )}
         </>
     )
 }

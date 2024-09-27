@@ -47,7 +47,7 @@ export function ZeroToOneSlider(props: {
                 <Grid item xs>
                     <Slider
                         value={typeof value === 'number' ? value : props.initial}
-                        step={0.01}
+                        step={0.05}
                         min={0}
                         max={1}
                         onChange={handleSliderChange}

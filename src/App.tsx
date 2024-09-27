@@ -9,16 +9,23 @@ import '@fontsource/roboto/700.css'
 import { Creation } from './components/creation'
 import { SettingsStore } from './model/settings'
 import { History } from './components/history'
+import { ProfileView } from './components/profile'
 
 export function App() {
-    const settings = useSyncExternalStore(SettingsStore.subscribe, SettingsStore.getSnapshot)
+    const { profile, settings } = useSyncExternalStore(
+        SettingsStore.subscribe,
+        SettingsStore.getSnapshot,
+    )
     return (
         <Grid container spacing={4}>
-            <Grid item xs={6}>
-                <Creation key={settings.timestamp} settings={settings} />
+            <Grid item xs={4}>
+                <ProfileView key={SettingsStore.profile.password} profile={profile} />
             </Grid>
-            <Grid item xs={6}>
-                <History key={settings.timestamp} settings={settings} />
+            <Grid item xs={4}>
+                <Creation key={SettingsStore.eTag} settings={settings} />
+            </Grid>
+            <Grid item xs={4}>
+                <History key={SettingsStore.eTag} settings={settings} />
             </Grid>
         </Grid>
     )

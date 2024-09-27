@@ -20,12 +20,12 @@ export function Picker(props: {
     }
     return (
         <Autocomplete
+            fullWidth={true}
             id={props.name}
             options={props.options}
             value={props.options.find((o) => o.id == props.initial) || props.options[0]}
             onChange={onChange}
             disableClearable={true}
-            sx={{ width: 300 }}
             renderInput={(params) => <TextField {...params} label={props.label} />}
         />
     )

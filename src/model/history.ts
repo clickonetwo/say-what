@@ -62,7 +62,7 @@ export class HistoryStore {
             return
         }
         // can't load blobs if we can't access the API
-        if (SettingsStore.getSnapshot().api_key.length != 32) {
+        if (SettingsStore.getSnapshot().settings.api_key.length < 32) {
             return
         }
         HistoryStore.loadMissingBlobs().then((ready) => ready && HistoryStore.updateAudio())
@@ -110,7 +110,7 @@ interface HistoryPage {
 }
 
 export async function getHistoryItems(limit: number = 100) {
-    const settings = SettingsStore.getSnapshot()
+    const { settings } = SettingsStore.getSnapshot()
     const items: HistoryItem[] = []
     const endpoint = `${settings.api_root}/history`
     const method = 'GET'
@@ -142,7 +142,7 @@ export async function getHistoryItems(limit: number = 100) {
 }
 
 export async function getHistoryItemAudio(id: string) {
-    const settings = SettingsStore.getSnapshot()
+    const { settings } = SettingsStore.getSnapshot()
     const url = `${settings.api_root}/history/${id}/audio`
     const method = 'GET'
     const headers = { 'xi-api-key': settings.api_key }

@@ -12,7 +12,7 @@ interface VoicePage {
 }
 
 export async function getVoices() {
-    const settings = SettingsStore.getSnapshot()
+    const { settings } = SettingsStore.getSnapshot()
     const url = `${settings.api_root}/voices`
     const method = 'GET'
     const headers = { 'xi-api-key': settings.api_key }
@@ -27,6 +27,65 @@ export async function getVoices() {
     return page.voices
 }
 
+export interface PdictMetadata {
+    id: string
+    latest_version_id: string
+    name: string
+    creation_time_unix: string
+    description: string
+}
+
+function metadataToOption(md: PdictMetadata): PdictOption {
+    return {
+        id: `${md.id}|${md.latest_version_id}`,
+        name: md?.description ? md.description : md.name,
+    }
+}
+
+export interface PdictOption {
+    id: string
+    name: string
+}
+
+export interface PdictLocator {
+    pronunciation_dictionary_id: string
+    version_id: string
+}
+
+function stringToLocator(s: string) {
+    let parts = s.split('|')
+    if (parts.length != 2) {
+        return undefined
+    }
+    const value: PdictLocator = {
+        pronunciation_dictionary_id: parts[0],
+        version_id: parts[1],
+    }
+    return value
+}
+
+interface PdictMetadataPage {
+    pronunciation_dictionaries: PdictMetadata[]
+}
+
+export async function getPdicts() {
+    const fallback: PdictOption = { id: '', name: '(None)' }
+    const { settings } = SettingsStore.getSnapshot()
+    const url = `${settings.api_root}/pronunciation-dictionaries/`
+    const method = 'GET'
+    const headers = { 'xi-api-key': settings.api_key }
+    const response = await fetch(url, { method, headers })
+    if (!response.ok) {
+        let detail = JSON.stringify(await response.json())
+        let message = `${url} got ${response.status}: ${detail}`
+        console.error(message)
+        return [fallback]
+    }
+    const page: PdictMetadataPage = await response.json()
+    const dicts: PdictOption[] = page.pronunciation_dictionaries.map(metadataToOption)
+    return [fallback, ...dicts]
+}
+
 export interface AutoCompleteOption {
     label: string
     id: string
@@ -37,6 +96,13 @@ export const voiceStore = new ApiExternalStore<AutoCompleteOption>(async () => {
     let options = voices.map(
         (voice) => ({ label: voice.name, id: voice.voice_id }) as AutoCompleteOption,
     )
+    options.sort((a, b) => (a.label < b.label ? -1 : b.label < a.label ? 1 : 0))
+    return options
+})
+
+export const pdictStore = new ApiExternalStore<AutoCompleteOption>(async () => {
+    let pdicts = await getPdicts()
+    let options = pdicts.map((pdict) => ({ label: pdict.name, id: pdict.id }) as AutoCompleteOption)
     options.sort((a, b) => (a.label < b.label ? -1 : b.label < a.label ? 1 : 0))
     return options
 })
@@ -64,7 +130,7 @@ export interface Model {
 }
 
 export async function getModels() {
-    const settings = SettingsStore.getSnapshot()
+    const { settings } = SettingsStore.getSnapshot()
     const url = `${settings.api_root}/models`
     const method = 'GET'
     const headers = { 'xi-api-key': settings.api_key }
@@ -100,6 +166,7 @@ export interface GenerationSettings {
     voice_id: string
     model_id: string
     voice_settings: SpeechSettings
+    pronunciation_dictionary: string
 }
 
 export function generationSettingsEqual(s1: GenerationSettings, s2: GenerationSettings) {
@@ -112,6 +179,7 @@ export function generationSettingsEqual(s1: GenerationSettings, s2: GenerationSe
     if (s1.voice_settings.stability != s2.voice_settings.stability) return false
     if (s1.voice_settings.similarity_boost != s2.voice_settings.similarity_boost) return false
     if (s1.voice_settings.use_speaker_boost != s2.voice_settings.use_speaker_boost) return false
+    if (s1.pronunciation_dictionary != s2.pronunciation_dictionary) return false
     return true
 }
 
@@ -127,7 +195,7 @@ export interface GeneratedItem {
 }
 
 export async function generateSpeech(text: string) {
-    const settings = SettingsStore.getSnapshot()
+    const { settings } = SettingsStore.getSnapshot()
     const voiceId = settings.generation_settings.voice_id
     const endpoint = `${settings.api_root}/text-to-speech/${voiceId}`
     const method = 'POST'
@@ -140,7 +208,7 @@ export async function generateSpeech(text: string) {
         optimize_streaming_latency: settings.generation_settings.optimize_streaming_latency,
     }
     const url = endpoint + '?' + new URLSearchParams(query).toString()
-    const body = JSON.stringify({
+    const params: { [k: string]: any } = {
         model_id: settings.generation_settings.model_id,
         text,
         voice_settings: {
@@ -148,7 +216,12 @@ export async function generateSpeech(text: string) {
             stability: settings.generation_settings.voice_settings.stability,
             use_speaker_boost: settings.generation_settings.voice_settings.use_speaker_boost,
         },
-    })
+    }
+    const dictParam = stringToLocator(settings.generation_settings.pronunciation_dictionary)
+    if (dictParam) {
+        params.pronunciation_dictionary_locators = [dictParam]
+    }
+    const body = JSON.stringify(params)
     const start = performance.now()
     const response = await fetch(url, { method, headers, body })
     if (!response.ok) {

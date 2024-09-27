@@ -13,7 +13,10 @@ export class ApiExternalStore<T> {
         console.log(`Subscribed to ${this.constructor.name} Store`)
         this.callbacks = [...this.callbacks, callback]
         let unsubscribeKeyChange = SettingsStore.subscribeKeyChange(() => this.doFetch)
-        if (this.cacheData.length == 0 && SettingsStore.getSnapshot().api_key) {
+        if (
+            this.cacheData.length == 0 &&
+            SettingsStore.getSnapshot().settings.api_key.length >= 32
+        ) {
             this.doFetch()
         }
         return () => {
@@ -32,7 +35,7 @@ export class ApiExternalStore<T> {
     }
 
     doFetch() {
-        if (SettingsStore.getSnapshot().api_key.length != 32) {
+        if (SettingsStore.getSnapshot().settings.api_key.length < 32) {
             console.warn(`Invalid API key, clearing ${this.constructor.name} Store cache`)
             this.cacheData = []
             this.notify()
