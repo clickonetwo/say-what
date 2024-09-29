@@ -1,15 +1,12 @@
 {
   "name": "say-what",
   "version": "1.0.0",
-  "description": "Generation and management of text-to-speech snippets",
+  "description": "Management of speech settings and favorites for the Whisper app",
   "scripts": {
     "test": "node ./dist/tests.js",
     "format": "prettier ./src --write",
-    "dev": "parcel serve src/public/index.html --no-cache",
-    "debug": "parcel build src/public/index.html --no-cache --no-optimize",
-    "build": "rm -f dist/* && parcel build src/public/index.html --public-url /say-what --no-cache --no-source-maps",
-    "predistribute": "npm run build",
-    "distribute": "rm -f ../whisper-server/back-end/public/say-what/* && cp dist/* ../whisper-server/back-end/public/say-what/"
+    "dev": "parcel build src/public/index.html --public-url ./ --no-cache --no-optimize",
+    "build": "rm -f dist/* && parcel build src/public/index.html --public-url ./ --no-cache --no-source-maps"
   },
   "keywords": [],
   "author": "Daniel Brotsky <dan@clickonetwo.io>",

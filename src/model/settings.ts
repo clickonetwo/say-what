@@ -2,7 +2,7 @@ import fnv from 'fnv-plus'
 
 import { GenerationSettings, generationSettingsEqual } from './speech'
 
-const whisperApiRoot = 'http://localhost:5000/api/say-what/v1'
+const whisperApiRoot = '/api/say-what/v1'
 
 export const isNode =
     typeof process !== 'undefined' && typeof process?.versions?.node !== 'undefined'
@@ -305,6 +305,12 @@ export class SettingsStore {
             mode: 'same-origin',
             headers,
             body: JSON.stringify(SettingsStore.settings),
+        }).catch((err) => {
+            console.error(`Network error on profile GET: ${err}`)
+            return new Response('', {
+                status: 500,
+                statusText: `Network error reaching ${whisperApiRoot}`,
+            })
         })
         if (resp.status == 403) {
             console.error(`Incorrect password on profile upload`)
